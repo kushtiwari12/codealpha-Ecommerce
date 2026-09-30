@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>My E-Commerce Store</title>
+<style>
+body{font-family:Arial;margin:0;background:#f5f5f5}
+nav{background:#222;color:white;padding:15px;display:flex;gap:20px;align-items:center}
+nav a{color:white;text-decoration:none;cursor:pointer}
+.products{display:flex;flex-wrap:wrap;gap:20px;padding:20px;justify-content:center}
+.card{background:white;padding:15px;border-radius:10px;width:200px;text-align:center;box-shadow:0 2px 5px #ccc}
+.card button{background:#ff4d4d;color:white;border:none;padding:8px 15px;border-radius:5px;cursor:pointer}
+.card button.added{background:green}
+#cartPage,#loginPage,#registerPage{display:none;padding:20px}
+input{display:block;margin:10px 0;padding:8px;width:250px}
+</style>
+</head>
+<body>
+<nav>
+<a onclick="showHome()">Home</a>
+<a onclick="showHome()">Products</a>
+<a onclick="showLogin()">Login</a>
+<a onclick="showRegister()">Register</a>
+<a id="cartCount" onclick="showCart()">Cart (0)</a>
+<span id="userInfo" style="margin-left:auto"></span>
+</nav>
+
+<div id="homePage">
+<h2 style="text-align:center">Featured Products</h2>
+<div class="products" id="productList"></div>
+</div>
+
+<div id="cartPage">
+<h2>Your Cart</h2>
+<div id="cartItems"></div>
+<button onclick="placeOrder()" style="background:green;color:white;padding:10px 20px;border:none;border-radius:5px;margin-top:10px">Place Order</button>
+<button onclick="showHome()">Back</button>
+</div>
+
+<div id="loginPage">
+<h2>Login</h2>
+<input id="loginEmail" placeholder="Email">
+<input id="loginPass" type="password" placeholder="Password">
+<button onclick="login()">Login</button>
+<p onclick="showRegister()" style="color:blue;cursor:pointer">No account? Register</p>
+</div>
+
+<div id="registerPage">
+<h2>Register</h2>
+<input id="regName" placeholder="Name">
+<input id="regEmail" placeholder="Email">
+<input id="regPass" type="password" placeholder="Password">
+<button onclick="register()">Register</button>
+<p onclick="showLogin()" style="color:blue;cursor:pointer">Already have account? Login</p>
+</div>
+
+<script>
+let products=[
+{id:1,name:"Headphone",price:29.99,icon:"🎧"},
+{id:2,name:"Smart Watch",price:45.00,icon:"⌚"},
+{id:3,name:"Running Shoes",price:35.00,icon:"👟"},
+{id:4,name:"Backpack",price:25.00,icon:"🎒"},
+{id:5,name:"Sunglasses",price:20.00,icon:"🕶️"},
+{id:6,name:"Speaker",price:30.00,icon:"🔊"}
+];
+let cart=JSON.parse(localStorage.getItem('cart')||'[]');
+let users=JSON.parse(localStorage.getItem('users')||'[]');
+let currentUser=JSON.parse(localStorage.getItem('currentUser')||'null');
+
+function renderProducts(){
+ let list=document.getElementById('productList');
+ list.innerHTML='';
+ products.forEach(p=>{
+   let inCart=cart.find(c=>c.id==p.id);
+   list.innerHTML+=`<div class="card"><div style="font-size:50px">${p.icon}</div><h3>${p.name}</h3><p>$${p.price}</p><button id="btn${p.id}" class="${inCart?'added':''}" onclick="addToCart(${p.id})">${inCart?'✓ Added ('+inCart.qty+')':'Add to Cart'}</button></div>`;
+ });
+ updateCartCount(); updateUser();
+}
+function addToCart(id){
+ let p=products.find(x=>x.id==id);
+ let existing=cart.find(x=>x.id==id);
+ if(existing){existing.qty++} else {cart.push({...p,qty:1})}
+ localStorage.setItem('cart',JSON.stringify(cart));
+ renderProducts();
+}
+function updateCartCount(){
+ let total=cart.reduce((s,i)=>s+i.qty,0);
+ document.getElementById('cartCount').innerText=`Cart (${total})`;
+}
+function updateUser(){
+ document.getElementById('userInfo').innerText=currentUser?`Hi, ${currentUser.name}`:'';
+}
+function hideAll(){document.getElementById('homePage').style.display='none';document.getElementById('cartPage').style.display='none';document.getElementById('loginPage').style.display='none';document.getElementById('registerPage').style.display='none';}
+function showHome(){hideAll();document.getElementById('homePage').style.display='block';}
+function showCart(){
+ hideAll();document.getElementById('cartPage').style.display='block';
+ let div=document.getElementById('cartItems');
+ if(cart.length==0){div.innerHTML="<p>Cart is empty</p>";return}
+ div.innerHTML=cart.map(c=>`<p>${c.name} x ${c.qty} = $${c.price*c.qty} <button onclick="removeItem(${c.id})">Remove</button></p>`).join('') + `<hr><b>Total: $${cart.reduce((s,i)=>s+i.price*i.qty,0).toFixed(2)}</b>`;
+}
+function showLogin(){hideAll();document.getElementById('loginPage').style.display='block';}
+function showRegister(){hideAll();document.getElementById('registerPage').style.display='block';}
+function register(){
+ let name=document.getElementById('regName').value;
+ let email=document.getElementById('regEmail').value;
+ let pass=document.getElementById('regPass').value;
+ if(!name||!email||!pass){alert("Fill all");return}
+ users.push({name,email,pass}); localStorage.setItem('users',JSON.stringify(users));
+ alert("Registered! Now Login"); showLogin();
+}
+function login(){
+ let email=document.getElementById('loginEmail').value;
+ let pass=document.getElementById('loginPass').value;
+ let u=users.find(x=>x.email==email && x.pass==pass);
+ if(u){currentUser=u; localStorage.setItem('currentUser',JSON.stringify(u)); alert("Login Success"); showHome(); renderProducts();}
+ else {alert("User not found, Register first")}
+}
+function removeItem(id){cart=cart.filter(c=>c.id!=id);localStorage.setItem('cart',JSON.stringify(cart));renderProducts();showCart()}
+function placeOrder(){
+ if(!currentUser){alert("Please Login first"); showLogin(); return}
+ alert("Order Placed! Total: $"+cart.reduce((s,i)=>s+i.price*i.qty,0).toFixed(2));
+ cart=[];localStorage.setItem('cart','[]');renderProducts();showHome();
+}
+renderProducts();
+</script>
+</body>
+</html>
